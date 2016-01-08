@@ -51,7 +51,7 @@ vtkOpenGLShadedActor::~vtkOpenGLShadedActor()
   this->SetTextureImageData(NULL);
   if (this->ProgramObject > 0)
     {
-    glDeleteProgram ( this->ProgramObject );
+    vtkgl::DeleteProgram ( this->ProgramObject );
     this->ProgramObject = 0;
     }
 }
@@ -99,7 +99,7 @@ static GLuint CompileShader ( vtkOpenGLShadedActor *self, GLenum type, const cha
   GLint compiled;
 
   // Create the shader object
-  shader = glCreateShader ( type );
+  shader = vtkgl::CreateShader ( type );
 
   if ( shader == 0 )
     {
@@ -107,31 +107,31 @@ static GLuint CompileShader ( vtkOpenGLShadedActor *self, GLenum type, const cha
     }
 
   // Load the shader source
-  glShaderSource ( shader, 1, &shaderSource, NULL );
+  vtkgl::ShaderSource ( shader, 1, &shaderSource, NULL );
 
   // Compile the shader
-  glCompileShader ( shader );
+  vtkgl::CompileShader ( shader );
 
   // Check the compile status
-  glGetShaderiv ( shader, GL_COMPILE_STATUS, &compiled );
+  vtkgl::GetShaderiv ( shader, vtkgl::COMPILE_STATUS, &compiled );
 
   if ( !compiled )
     {
     GLint infoLen = 0;
 
-    glGetShaderiv ( shader, GL_INFO_LOG_LENGTH, &infoLen );
+    vtkgl::GetShaderiv ( shader, vtkgl::INFO_LOG_LENGTH, &infoLen );
 
     if ( infoLen > 1 )
       {
       char *infoLog = (char *) malloc ( sizeof ( char ) * infoLen );
 
-      glGetShaderInfoLog ( shader, infoLen, NULL, infoLog );
+      vtkgl::GetShaderInfoLog ( shader, infoLen, NULL, infoLog );
       vtkErrorWithObjectMacro (self, "Error compiling shader\n" << infoLog );
 
       free ( infoLog );
       }
 
-      glDeleteShader ( shader );
+      vtkgl::DeleteShader ( shader );
       return 0;
    }
    return shader;
@@ -150,7 +150,7 @@ bool vtkOpenGLShadedActor::UpdateProgram()
     {
     if (this->ProgramObject != 0)
       {
-      glDeleteProgram ( this->ProgramObject );
+      vtkgl::DeleteProgram ( this->ProgramObject );
       }
     this->ProgramObjectMTime = 0;
     }
@@ -160,42 +160,42 @@ bool vtkOpenGLShadedActor::UpdateProgram()
     }
 
   // Load the vertex/fragment shaders
-  vertexShader = CompileShader ( this, GL_VERTEX_SHADER, this->VertexShaderSource );
-  fragmentShader = CompileShader ( this, GL_FRAGMENT_SHADER, this->FragmentShaderSource );
+  vertexShader = CompileShader ( this, vtkgl::VERTEX_SHADER, this->VertexShaderSource );
+  fragmentShader = CompileShader ( this, vtkgl::FRAGMENT_SHADER, this->FragmentShaderSource );
 
   // Create the program object
-  this->ProgramObject = glCreateProgram ( );
+  this->ProgramObject = vtkgl::CreateProgram ( );
 
   if ( this->ProgramObject == 0 )
     {
     return false;
     }
 
-  glAttachShader ( this->ProgramObject, vertexShader );
-  glAttachShader ( this->ProgramObject, fragmentShader );
+  vtkgl::AttachShader ( this->ProgramObject, vertexShader );
+  vtkgl::AttachShader ( this->ProgramObject, fragmentShader );
 
-  glLinkProgram ( this->ProgramObject );
+  vtkgl::LinkProgram ( this->ProgramObject );
 
   // Check the link status
-  glGetProgramiv ( this->ProgramObject, GL_LINK_STATUS, &linked );
+  vtkgl::GetProgramiv ( this->ProgramObject, vtkgl::LINK_STATUS, &linked );
 
   if ( !linked )
     {
     // something went wrong, so emit error message if possible
     GLint infoLen = 0;
-    glGetProgramiv ( this->ProgramObject, GL_INFO_LOG_LENGTH, &infoLen );
+    vtkgl::GetProgramiv ( this->ProgramObject, vtkgl::INFO_LOG_LENGTH, &infoLen );
 
     if ( infoLen > 1 )
       {
       char *infoLog = (char *) malloc ( sizeof ( char ) * infoLen );
 
-      glGetProgramInfoLog ( this->ProgramObject, infoLen, NULL, infoLog );
+      vtkgl::GetProgramInfoLog ( this->ProgramObject, infoLen, NULL, infoLog );
       vtkErrorMacro ( "Error linking program\n" << infoLog );
 
       free ( infoLog );
       }
 
-    glDeleteProgram ( this->ProgramObject );
+    vtkgl::DeleteProgram ( this->ProgramObject );
     return false;
     }
 
@@ -311,35 +311,35 @@ void vtkOpenGLShadedActor::Render(vtkRenderer *ren, vtkMapper *mapper)
                         };
 
   // Use the program object
-  glUseProgram ( this->ProgramObject );
+  vtkgl::UseProgram ( this->ProgramObject );
 
   // Vertices in a buffer
-  GLuint vertexLocation = glGetAttribLocation(this->ProgramObject, "vertexAttribute");
+  GLuint vertexLocation = vtkgl::GetAttribLocation(this->ProgramObject, "vertexAttribute");
   GLuint planeVerticesBuffer;
-  glGenBuffers(1, &planeVerticesBuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, planeVerticesBuffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*3*4, planeVertices, GL_STATIC_DRAW);
-  glEnableVertexAttribArray ( vertexLocation );
-  glVertexAttribPointer ( vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0 );
+  vtkgl::GenBuffers(1, &planeVerticesBuffer);
+  vtkgl::BindBuffer(vtkgl::ARRAY_BUFFER, planeVerticesBuffer);
+  vtkgl::BufferData(vtkgl::ARRAY_BUFFER, sizeof(GLfloat)*3*4, planeVertices, vtkgl::STATIC_DRAW);
+  vtkgl::EnableVertexAttribArray ( vertexLocation );
+  vtkgl::VertexAttribPointer ( vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0 );
 
   // texture coordinates in a buffer
-  GLuint textureCoordinatesLocation = glGetAttribLocation(this->ProgramObject, "textureCoordinateAttribute");
+  GLuint textureCoordinatesLocation = vtkgl::GetAttribLocation(this->ProgramObject, "textureCoordinateAttribute");
   GLuint textureCoordinatesBuffer;
-  glGenBuffers(1, &textureCoordinatesBuffer);
-  glBindBuffer(GL_ARRAY_BUFFER, textureCoordinatesBuffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*2*4, planeTextureCoordinates, GL_STATIC_DRAW);
-  glEnableVertexAttribArray ( textureCoordinatesLocation );
-  glVertexAttribPointer ( textureCoordinatesLocation, 2, GL_FLOAT, GL_FALSE, 0, 0 );
+  vtkgl::GenBuffers(1, &textureCoordinatesBuffer);
+  vtkgl::BindBuffer(vtkgl::ARRAY_BUFFER, textureCoordinatesBuffer);
+  vtkgl::BufferData(vtkgl::ARRAY_BUFFER, sizeof(GLfloat)*2*4, planeTextureCoordinates, vtkgl::STATIC_DRAW);
+  vtkgl::EnableVertexAttribArray ( textureCoordinatesLocation );
+  vtkgl::VertexAttribPointer ( textureCoordinatesLocation, 2, GL_FLOAT, GL_FALSE, 0, 0 );
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_3D, this->TextureID);
-  GLuint volumeSamplerLocation = glGetUniformLocation(this->ProgramObject, "volumeSampler");
-  glUniform1i(volumeSamplerLocation, 0);
+  GLuint volumeSamplerLocation = vtkgl::GetUniformLocation(this->ProgramObject, "volumeSampler");
+  vtkgl::Uniform1i(volumeSamplerLocation, 0);
 
   glDrawArrays ( GL_QUADS, 0, 4 );
 
   // Don't use the program anymore
-  glUseProgram ( 0 );
+  vtkgl::UseProgram ( 0 );
 
 
   // - add a vtkCollection of vtkImageData and make each one a texture3D (in order)
